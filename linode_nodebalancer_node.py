@@ -87,6 +87,20 @@ def nodebalancer_node_find(api, nodebalancer, config, node_id, node_name):
     return None
 
 
+def handle_api_error(func):
+    def handle(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except linode_api.ApiError as e:
+            code = e.value[0]['ERRORCODE']
+            err = e.value[0]['ERRORMESSAGE']
+            msg = "FATAL: Code [{code}] - {err}".format(code=code,
+                                                        err=err)
+            return args[0].fail_json(msg=msg)
+    return handle
+
+
+@handle_api_error
 def linodeNodeBalancerNodes(module, api, state, name, node_balancer_id,
                             config_id, port, protocol, node_id, node_name,
                             address, weight, mode):
