@@ -72,12 +72,25 @@ def nodebalancer_config_find(api, nodebalancer, config_id, port, protocol):
     return None
 
 
+def handle_api_error(func):
+    def handle(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except linode_api.ApiError as e:
+            code = e.value[0]['ERRORCODE']
+            err = e.value[0]['ERRORMESSAGE']
+            msg = "FATAL: Code [{code}] - {err}".format(code=code,
+                                                        err=err)
+            return args[0].fail_json(msg=msg)
+    return handle
+
+
+@handle_api_error
 def linodeNodeBalancerConfigs(module, api, state, name, node_balancer_id,
                               config_id, port, protocol, algorithm, stickiness,
                               check, check_interval, check_timeout,
                               check_attempts, check_path, check_body):
 
-    debug = {}
     changed = False
 
     nodebalancer = nodebalancer_find(api, node_balancer_id, name)
@@ -89,12 +102,36 @@ def linodeNodeBalancerConfigs(module, api, state, name, node_balancer_id,
     config = nodebalancer_config_find(api, nodebalancer, config_id,
                                       port, protocol)
 
-    debug['nodebalancer'] = nodebalancer
-    debug['config'] = config
-
     if config:
         if state == "present":
-            pass
+            if config['PORT'] != port \
+               or config['PROTOCOL'] != protocol \
+               or config['ALGORITHM'] != algorithm \
+               or config['STICKINESS'] != stickiness \
+               or config['CHECK'] != check \
+               or config['CHECK_INTERVAL'] != check_interval \
+               or config['CHECK_TIMEOUT'] != check_timeout \
+               or config['CHECK_ATTEMPTS'] != check_attempts \
+               or config['CHECK_PATH'] != str(check_path) \
+               or config['CHECK_BODY'] != str(check_body):
+
+                new = api.nodebalancer_config_update(
+                    ConfigID=config['CONFIGID'],
+                    Port=port,
+                    Protocol=protocol,
+                    Algorithm=algorithm,
+                    Stickiness=stickiness,
+                    check=check,
+                    check_interval=check_interval,
+                    check_timeout=check_timeout,
+                    check_attempts=check_attempts,
+                    check_path=check_path,
+                    check_body=check_body,
+                )
+                changed = True
+                config = nodebalancer_config_find(api, nodebalancer,
+                                                  new['ConfigID'],
+                                                  port, protocol)
         elif state == "absent":
             api.nodebalancer_config_delete(
                 NodeBalancerID=nodebalancer['NODEBALANCERID'],
@@ -123,7 +160,7 @@ def linodeNodeBalancerConfigs(module, api, state, name, node_balancer_id,
         elif state == "absent":
             pass
 
-    module.exit_json(changed=changed, instances=config, debug=debug)
+    module.exit_json(changed=changed, instances=config)
 
 
 # ===========================================
@@ -176,6 +213,9 @@ def main():
             check_body=dict(required=False,
                             type='str'),
         ),
+        required_one_of=[
+            ['name', 'node_balancer_id']
+        ],
         supports_check_mode=False
     )
 
