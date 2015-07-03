@@ -53,16 +53,39 @@ def nodebalancer_find(api, node_balancer_id, name):
     return None
 
 
-def linodeNodeBalancers(module, api, state, name, node_balancer_id,
-                        datacenter_id, paymentterm):
+def handle_api_error(func):
+    def handle(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except linode_api.ApiError as e:
+            code = e.value[0]['ERRORCODE']
+            err = e.value[0]['ERRORMESSAGE']
+            msg = "FATAL: Code [{code}] - {err}".format(code=code,
+                                                        err=err)
+            return args[0].fail_json(msg=msg)
+    return handle
 
-    debug = {}
+
+@handle_api_error
+def linodeNodeBalancers(module, api, state, name, node_balancer_id,
+                        datacenter_id, paymentterm, client_conn_throttle):
+
     changed = False
 
     nodebalancer = nodebalancer_find(api, node_balancer_id, name)
     if nodebalancer:
         if state == "present":
-            pass
+            if nodebalancer['LABEL'] != name or \
+               nodebalancer['CLIENTCONNTHROTTLE'] != client_conn_throttle:
+
+                new = api.nodebalancer_update(
+                    NodeBalancerID=nodebalancer['NODEBALANCERID'],
+                    Label=name,
+                    ClientConnThrottle=client_conn_throttle)
+                changed = True
+                nodebalancer = nodebalancer_find(api,
+                                                 new['NodeBalancerID'],
+                                                 name)
         elif state == "absent":
             api.nodebalancer_delete(
                 NodeBalancerId=nodebalancer['NODEBALANCERID']
@@ -80,7 +103,7 @@ def linodeNodeBalancers(module, api, state, name, node_balancer_id,
         elif state == "absent":
             pass
 
-    module.exit_json(changed=changed, instances=nodebalancer, debug=debug)
+    module.exit_json(changed=changed, instances=nodebalancer)
 
 
 # ===========================================
@@ -104,7 +127,13 @@ def main():
             paymentterm=dict(required=False,
                              default=1,
                              type='int'),
+            client_conn_throttle=dict(required=False,
+                                      default=0,
+                                      type='int')
         ),
+        required_one_of=[
+            ['name', 'node_balancer_id']
+        ],
         supports_check_mode=False
     )
 
@@ -117,6 +146,7 @@ def main():
     state = module.params.get('state')
     datacenter_id = module.params.get('datacenter_id')
     paymentterm = module.params.get('paymentterm')
+    client_conn_throttle = module.params.get('client_conn_throttle')
 
     # Setup the api_key
     if not api_key:
@@ -133,7 +163,7 @@ def main():
         module.fail_json(msg='%s' % e.value[0]['ERRORMESSAGE'])
 
     linodeNodeBalancers(module, api, state, name, node_balancer_id,
-                        datacenter_id, paymentterm)
+                        datacenter_id, paymentterm, client_conn_throttle)
 
 
 from ansible.module_utils.basic import *
