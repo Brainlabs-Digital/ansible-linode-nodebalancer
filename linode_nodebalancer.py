@@ -20,15 +20,49 @@ author: Duncan Morris (@duncanmorris)
 notes:
     - Other things consumers of your module should know
 requirements:
-    - list of required things
-    - like the factor package
-    - or a specic platform
+    - This module runs locally, not on the remote server(s)
+    - It relies on the linode-python library https://github.com/tjfontaine/linode-python
 options:
-    name:
-        required: true
-        aliases: [ "node_id" ]
+    api_key:
+        required: false
+        type: string
         description:
-            - Name / NodeID of the nodebalancer to create, delete or update.
+            - Your linode api key, (see https://www.linode.com/docs/platform/api/api-key). You could pass it in directly to the modele, or set it as an environment variable (LINODE_API_KEY).
+    name:
+        required: false
+        type: string
+        description:
+            - The name of the NodeBalancer being targeted.
+    node_balancer_id:
+        required: false
+        type: integer
+        description:
+            - The id of the NodeBalancer being targeted. This is not exposed anywhere obvious (other than the api), so typically you would target via name. One of name, or node_balancer_id is required.
+    state:
+        required: false
+        choices: ['present', 'absent']
+        default: present
+        type: string
+        description:
+            - The desired state of the nodebalancer
+    datacenter_id:
+        required: false
+        default: 7 (London)
+        type: integer
+        description:
+            - The id of the linode datacenter the nodebalancer should be in. Must be an integer between 2 and 9. See linode for the full list - https://www.linode.com/api/utility/avail.datacenters
+    paymentterm:
+        required: false
+        type: integer
+        default: 1
+        choices: [1, 12, 24]
+        description: The payment term for the nodebalancer. One of 1, 12, or 24 months
+    client_conn_throttle:
+        required: false
+        default: 0
+        type: integer
+        description:
+            - Allowed connections per second, per client IP. 0 to disable.
 '''
 
 EXAMPLES = '''
@@ -126,6 +160,7 @@ def main():
                                type='int'),
             paymentterm=dict(required=False,
                              default=1,
+                             choices=[1, 12, 24],
                              type='int'),
             client_conn_throttle=dict(required=False,
                                       default=0,
