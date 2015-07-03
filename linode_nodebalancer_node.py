@@ -206,6 +206,11 @@ def main():
                       choices=['accept', 'reject', 'drain'],
                       type='str'),
         ),
+        required_one_of=[
+            ['name', 'node_balancer_id'],
+            ['port', 'protocol', 'config_id'],
+            ['node_name', 'node_id']
+        ],
         supports_check_mode=False
     )
 

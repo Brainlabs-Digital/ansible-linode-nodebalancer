@@ -214,7 +214,8 @@ def main():
                             type='str'),
         ),
         required_one_of=[
-            ['name', 'node_balancer_id']
+            ['name', 'node_balancer_id'],
+            ['port', 'protocol', 'config_id'],
         ],
         supports_check_mode=False
     )
