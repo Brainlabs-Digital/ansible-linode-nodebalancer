@@ -74,6 +74,10 @@ EXAMPLES = '''
 
 
 def nodebalancer_find(api, node_balancer_id, name):
+    """Lookup and return a nodebalancer from the api.
+    If node_balancer_id is present, lookup based on that.
+    If not, lookup based on the name
+    """
 
     if node_balancer_id:
         return api.nodebalancer_list(NodeBalancerID=node_balancer_id)
@@ -88,6 +92,11 @@ def nodebalancer_find(api, node_balancer_id, name):
 
 
 def handle_api_error(func):
+    """A decorator that catches and api errors from the linode api and
+    returns ansible module fail_json.
+
+    An ansible module instance must be the first argument to the func
+    """
     def handle(*args, **kwargs):
         try:
             return func(*args, **kwargs)
@@ -103,6 +112,18 @@ def handle_api_error(func):
 @handle_api_error
 def linodeNodeBalancers(module, api, state, name, node_balancer_id,
                         datacenter_id, paymentterm, client_conn_throttle):
+    """ Ensure the given node balancer is in the correct state.
+
+    If it is present and is meant to be, then potentially update it to
+    ensure the other settings are up to date.
+
+    If it is present and isn't meant to be, then delete it
+
+    If it is absent but should be present, then create it, with the
+    given settings.
+
+    If it is correctly absent, then ignore
+    """
 
     changed = False
 
