@@ -15,10 +15,7 @@ module: linode_nodebalancer
 short_description: Add / Delete / Update a linode nodebalancer
 description:
     - Wrapper around the linode nodebalancer api https://www.linode.com/api/nodebalancer
-version_added: "0.1"
 author: Duncan Morris (@duncanmorris)
-notes:
-    - Other things consumers of your module should know
 requirements:
     - This module runs locally, not on the remote server(s)
     - It relies on the linode-python library https://github.com/tjfontaine/linode-python
