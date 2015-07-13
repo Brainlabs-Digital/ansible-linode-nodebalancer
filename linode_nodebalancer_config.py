@@ -115,14 +115,40 @@ options:
 '''
 
 EXAMPLES = '''
-
-# Set the weight of node 'web01' to 0 on nodebalancer 'ambassador'
- - linode_nodebalancer: name=web01 weight=0 node=ambassador
-
+- name: ensure http:80 config is present on the NodeBalancer "NodeBalancer Name"
+  local_action:
+    module: linode_nodebalancer_config
+    api_key: "{{ linode_api_key }}"
+    name: "NodeBalancer Name"
+    port: 80
+    protocol: http
+    algorithm: roundrobin
 '''
 
 
+def handle_api_error(func):
+    """A decorator that catches and api errors from the linode api and
+    returns ansible module fail_json.
+
+    An ansible module instance must be the first argument to the func
+    """
+    def handle(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except linode_api.ApiError as e:
+            code = e.value[0]['ERRORCODE']
+            err = e.value[0]['ERRORMESSAGE']
+            msg = "FATAL: Code [{code}] - {err}".format(code=code,
+                                                        err=err)
+            return args[0].fail_json(msg=msg)
+    return handle
+
+
 def nodebalancer_find(api, node_balancer_id, name):
+    """Lookup and return a nodebalancer from the api.
+    If node_balancer_id is present, lookup based on that.
+    If not, lookup based on the name
+    """
 
     if node_balancer_id:
         return api.nodebalancer_list(NodeBalancerID=node_balancer_id)
@@ -137,6 +163,10 @@ def nodebalancer_find(api, node_balancer_id, name):
 
 
 def nodebalancer_config_find(api, nodebalancer, config_id, port, protocol):
+    """Lookup and return a nodebalancer config fromt he api.
+    If config_id is present, lookup based on that.
+    If no, lookup based on the port and protocol
+    """
 
     if config_id:
         return api.nodebalancer_config_list(
@@ -153,19 +183,6 @@ def nodebalancer_config_find(api, nodebalancer, config_id, port, protocol):
             return config
 
     return None
-
-
-def handle_api_error(func):
-    def handle(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except linode_api.ApiError as e:
-            code = e.value[0]['ERRORCODE']
-            err = e.value[0]['ERRORMESSAGE']
-            msg = "FATAL: Code [{code}] - {err}".format(code=code,
-                                                        err=err)
-            return args[0].fail_json(msg=msg)
-    return handle
 
 
 @handle_api_error

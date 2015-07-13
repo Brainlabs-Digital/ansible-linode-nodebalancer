@@ -63,29 +63,13 @@ options:
 '''
 
 EXAMPLES = '''
-
-# Set the weight of node 'web01' to 0 on nodebalancer 'ambassador'
- - linode_nodebalancer: name=web01 weight=0 node=ambassador
-
+- name: Ensure NodeBalancer Name is present
+  local_action:
+    module: linode_nodebalancer
+    api_key: "{{ linode_api_key }}"
+    name: "NodeBalancer Name"
+    state: present
 '''
-
-
-def nodebalancer_find(api, node_balancer_id, name):
-    """Lookup and return a nodebalancer from the api.
-    If node_balancer_id is present, lookup based on that.
-    If not, lookup based on the name
-    """
-
-    if node_balancer_id:
-        return api.nodebalancer_list(NodeBalancerID=node_balancer_id)
-
-    if name:
-        nodebalancers = api.nodebalancer_list()
-        for nb in nodebalancers:
-            if nb['LABEL'] == name:
-                return nb
-
-    return None
 
 
 def handle_api_error(func):
@@ -104,6 +88,24 @@ def handle_api_error(func):
                                                         err=err)
             return args[0].fail_json(msg=msg)
     return handle
+
+
+def nodebalancer_find(api, node_balancer_id, name):
+    """Lookup and return a nodebalancer from the api.
+    If node_balancer_id is present, lookup based on that.
+    If not, lookup based on the name
+    """
+
+    if node_balancer_id:
+        return api.nodebalancer_list(NodeBalancerID=node_balancer_id)
+
+    if name:
+        nodebalancers = api.nodebalancer_list()
+        for nb in nodebalancers:
+            if nb['LABEL'] == name:
+                return nb
+
+    return None
 
 
 @handle_api_error

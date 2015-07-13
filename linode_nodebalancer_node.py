@@ -33,13 +33,45 @@ options:
 
 EXAMPLES = '''
 
-# Set the weight of node 'web01' to 0 on nodebalancer 'ambassador'
- - linode_nodebalancer: name=web01 weight=0 node=ambassador
+NB: This module could be used as a pre / post task as part of a rolling upgrade (e.g. using serial to take 1 server out of the node balancer, upgrading it, before putting it back in play). See http://docs.ansible.com/guide_rolling_upgrade.html for further details.
 
+- name: Ensure the current node is set to accept connections
+  local_action:
+    module: linode_nodebalancer_node
+    api_key: "{{ linode_api_key }}"
+    name: "NodeBalancer Name"
+    port: 80
+    protocol: http
+    node_name: "{{ inventory_hostname }}"
+    address: "{{hostvars[inventory_hostname]['ansible_eth0_1']['ipv4']['address']}}:80"
+    mode: accept
+    weight: 100
 '''
 
 
+def handle_api_error(func):
+    """A decorator that catches and api errors from the linode api and
+    returns ansible module fail_json.
+
+    An ansible module instance must be the first argument to the func
+    """
+    def handle(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except linode_api.ApiError as e:
+            code = e.value[0]['ERRORCODE']
+            err = e.value[0]['ERRORMESSAGE']
+            msg = "FATAL: Code [{code}] - {err}".format(code=code,
+                                                        err=err)
+            return args[0].fail_json(msg=msg)
+    return handle
+
+
 def nodebalancer_find(api, node_balancer_id, name):
+    """Lookup and return a nodebalancer from the api.
+    If node_balancer_id is present, lookup based on that.
+    If not, lookup based on the name
+    """
 
     if node_balancer_id:
         return api.nodebalancer_list(NodeBalancerID=node_balancer_id)
@@ -54,6 +86,10 @@ def nodebalancer_find(api, node_balancer_id, name):
 
 
 def nodebalancer_config_find(api, nodebalancer, config_id, port, protocol):
+    """Lookup and return a nodebalancer config from the api.
+    If config_id is present, lookup based on that.
+    If not, lookup based on the port and protocol
+    """
 
     if config_id:
         return api.nodebalancer_config_list(
@@ -73,6 +109,10 @@ def nodebalancer_config_find(api, nodebalancer, config_id, port, protocol):
 
 
 def nodebalancer_node_find(api, nodebalancer, config, node_id, node_name):
+    """Lookup and return a node from the given nodebalancer / config
+    If node_id is present lookup based on that.
+    If not, lookup based on the node_name
+    """
 
     if node_id:
         return api.nodebalancer_node_list(ConfigID=config['CONFIGID'],
@@ -85,19 +125,6 @@ def nodebalancer_node_find(api, nodebalancer, config, node_id, node_name):
             return node
 
     return None
-
-
-def handle_api_error(func):
-    def handle(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except linode_api.ApiError as e:
-            code = e.value[0]['ERRORCODE']
-            err = e.value[0]['ERRORMESSAGE']
-            msg = "FATAL: Code [{code}] - {err}".format(code=code,
-                                                        err=err)
-            return args[0].fail_json(msg=msg)
-    return handle
 
 
 @handle_api_error

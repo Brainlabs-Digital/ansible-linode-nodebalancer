@@ -71,6 +71,11 @@ NB, The node balancer will only work on private ip addresses ([docs](https://www
         address: "{{hostvars[inventory_hostname]['ansible_eth0_1']['ipv4']['address']}}:80"
 
 
+# Todo:
+
+    - Move repeating functions (e.g. `nodebalancer_find` and `handle_api_error`) into a file that can be imported.
+    - Allow https / SSH as a protocol
+
 # License
 
 This code is provided under an MIT-style license. Please refer to the LICENSE file in the root of the project for specifics.
