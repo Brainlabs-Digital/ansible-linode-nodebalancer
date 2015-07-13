@@ -12,9 +12,9 @@ except ImportError as ie:
 DOCUMENTATION = '''
 ---
 module: linode_nodebalancer_config
-short_description: Add / Delete / Update a "config" in a linode nodebalancer. Each NodeBalancer config adds another port that the NodeBalancer will listen on. For instance, if you wish to balance both port 80 and 81, you’ll need to add two configuration profiles to your NodeBalancer.
+short_description: Add / Delete / Update a config in a linode nodebalancer. Each NodeBalancer config adds another port that the NodeBalancer will listen on. For instance, if you wish to balance both port 80 and 81, you'll need to add two configuration profiles to your NodeBalancer.
 description:
-    - Wrapper around the linode nodebalancer api https://www.linode.com/api/nodebalancer - or https://www.linode.com/docs/platform/nodebalancer/nodebalancer-reference-guide
+    - Wrapper around the linode nodebalancer api https://www.linode.com/api/nodebalancer or https://www.linode.com/docs/platform/nodebalancer/nodebalancer-reference-guide
 author: Duncan Morris (@duncanmorris)
 requirements:
     - This module runs locally, not on the remote server(s)
@@ -24,7 +24,7 @@ options:
         required: false
         type: string
         description:
-            - Your linode api key, (see https://www.linode.com/docs/platform/api/api-key). You could pass it in directly to the modele, or set it as an environment variable (LINODE_API_KEY).
+            - Your linode api key, (see https://www.linode.com/docs/platform/api/api-key). You could pass it in directly to the module, or set it as an environment variable (LINODE_API_KEY).
     name:
         required: false
         type: string
@@ -71,7 +71,7 @@ options:
         required: false
         type: string
         default: none
-        choices: ['none', 'table', 'http_cookie'],
+        choices: ['none', 'table', 'http_cookie']
         description:
             - NodeBalancers have the ability for Session Persistence - meaning subsequent requests from the same client will be routed to the same backend Node when possible
     check:
@@ -81,9 +81,9 @@ options:
         choices: ['connection', 'http', 'http_body']
         description:
             - NodeBalancers perform both passive and active health checks against the backend nodes. Nodes that are no longer responding are taken out of rotation. This determines the type of check to perform.
-                - 'connection' - TCP Connection - requires a successful TCP handshake with a backend node.
-                - 'http' - HTTP Valid Status - performs an HTTP request on the provided path and requires a 2xx or 3xx response from the backend node.
-                - 'http_body' - HTTP Body Regex - performs an HTTP request on the provided path and requires the provided PCRE regular expression matches against the request’s result body.
+                - 'connection', TCP Connection, requires a successful TCP handshake with a backend node.
+                - 'http', HTTP Valid Status, performs an HTTP request on the provided path and requires a 2xx or 3xx response from the backend node.
+                - 'http_body', HTTP Body Regex, performs an HTTP request on the provided path and requires the provided PCRE regular expression matches against the request's result body.
     check_interval:
         required: false
         type: integer
@@ -111,7 +111,7 @@ options:
         required: false
         type: string
         description:
-            - Used in conjuction with 'check_path'. This is the PCRE regular expression to match against the request's result body.
+            - Used in conjuction with 'check_path'. This is the PCRE regular expression to match against the request's result body.                       
 '''
 
 EXAMPLES = '''
