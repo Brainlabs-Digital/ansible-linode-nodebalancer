@@ -17,18 +17,78 @@ description:
     - Wrapper around the linode nodebalancer api https://www.linode.com/api/nodebalancer
 version_added: "0.1"
 author: Duncan Morris (@duncanmorris)
-notes:
-    - Other things consumers of your module should know
 requirements:
-    - list of required things
-    - like the factor package
-    - or a specic platform
+    - This module runs locally, not on the remote server(s)
+    - It relies on the linode-python library https://github.com/tjfontaine/linode-python
 options:
-    name:
-        required: true
-        aliases: [ "node_id" ]
+    api_key:
+        required: false
+        type: string
         description:
-            - Name / NodeID of the nodebalancer to create, delete or update.
+            - Your linode api key, (see https://www.linode.com/docs/platform/api/api-key). You could pass it in directly to the modele, or set it as an environment variable (LINODE_API_KEY).
+    name:
+        required: false
+        type: string
+        description:
+            - The name of the NodeBalancer being targeted.
+    node_balancer_id:
+        required: false
+        type: integer
+        description:
+            - The id of the NodeBalancer being targeted. This is not exposed anywhere obvious (other than the api), so typically you would target via name. One of name, or node_balancer_id is required. If present, this takes precedence over the name when looking up the nodebalancer.
+    state:
+        required: false
+        choices: ['present', 'absent']
+        default: present
+        type: string
+        description:
+            - The desired state of the node
+    config_id:
+        required: false
+        type: integer
+        description:
+            - The id of the NodeBalancer Config being targeted. This is not exposed anywhere obvious (other than the api) so typically you would target the config via a port and protocol. If present this takes precedence over the port / protocol when looking up the config.
+    port:
+        required: false
+        type: integer
+        default: 80
+        description:
+            - The port of the config we are targeting.
+    protocol:
+        required: false
+        type: string
+        default: http
+        choices: ['http', 'tcp']
+        description:
+            - The protocol of the config we are targeting. NB, https is not currently supported (pull requests welcomed).
+    node_id:
+        required: false
+        type: integer
+        description:
+            - The id of the Node being targeted. This is not exposed anywhere obvious (other than the api) so typically you would target the node via it's name (node_name). If present this takes precedence over the name when looking up the node.
+    name:
+        required: false
+        type: string
+        description:
+            - The name of the Node being targeted. Typically this would be the hostname of the target server
+    address:
+        required: false
+        type: string
+        description:
+            - The address:port combination used to communicate with this Node. Linode requires that this is a private IP address. This is typically exposed in the following way "{{hostvars[inventory_hostname]['ansible_eth0_1']['ipv4']['address']}}:80"
+    weight:
+        required: false
+        type: integer
+        default: 100
+        description:
+            - Load balancing weight, 1-255. Higher means more connections
+    mode:
+        required: false
+        type: string
+        default: 'accept'
+        choices: ['accept', 'reject', 'drain']
+        description:
+            - The connections mode for this node. One of 'accept', 'reject', or 'drain'
 '''
 
 EXAMPLES = '''
